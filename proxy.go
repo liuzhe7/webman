@@ -11,10 +11,17 @@ import (
 func main() {
 	// 设置代理处理函数
 	http.HandleFunc("/proxy", proxyHandler)
-	
+	http.HandleFunc("/", indexHandler)
+
 	// 启动服务器
 	log.Println("Proxy server starting on :8080")
+	log.Println("Visit the webman at http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	// return the index.html
+	http.ServeFile(w, r, "index.html")
 }
 
 func proxyHandler(w http.ResponseWriter, r *http.Request) {
