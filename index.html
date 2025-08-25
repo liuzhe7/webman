@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Postman</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        dark: '#1E293B',
+                        light: '#F8FAFC',
+                        accent: '#8B5CF6',
+                        danger: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .transition-height {
+                transition: max-height 0.3s ease-in-out;
+            }
+            .scrollbar-thin {
+                scrollbar-width: thin;
+            }
+            .scrollbar-thin::-webkit-scrollbar {
+                width: 4px;
+                height: 4px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background-color: rgba(156, 163, 175, 0.5);
+                border-radius: 2px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 py-3 px-4 md:px-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-rocket text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-gray-800">Web Postman</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa fa-moon-o text-gray-600"></i>
+                </button>
+                <button id="help-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa fa-question text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 container mx-auto p-4 md:p-6">
+        <!-- Request Section -->
+        <section class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden transition-all duration-300 hover:shadow-md">
+            <!-- Request Header -->
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Request</h2>
+                
+                <!-- Method and URL -->
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <div class="flex flex-wrap gap-2">
+                        <button class="method-btn px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors active" data-method="GET">GET</button>
+                        <button class="method-btn px-4 py-2 rounded-lg bg-secondary text-white font-medium hover:bg-secondary/90 transition-colors" data-method="POST">POST</button>
+                        <button class="method-btn px-4 py-2 rounded-lg bg-orange-500 text-white font-medium hover:orange-500/90 transition-colors" data-method="PUT">PUT</button>
+                        <button class="method-btn px-4 py-2 rounded-lg bg-danger text-white font-medium hover:danger/90 transition-colors" data-method="DELETE">DELETE</button>
+                        <button class="method-btn px-4 py-2 rounded-lg bg-purple-500 text-white font-medium hover:purple-500/90 transition-colors" data-method="PATCH">PATCH</button>
+                        <button class="method-btn px-4 py-2 rounded-lg bg-gray-500 text-white font-medium hover:gray-500/90 transition-colors" data-method="HEAD">HEAD</button>
+                        <button class="method-btn px-4 py-2 rounded-lg bg-teal-500 text-white font-medium hover:teal-500/90 transition-colors" data-method="OPTIONS">OPTIONS</button>
+                    </div>
+                    
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa fa-globe text-gray-400"></i>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="url-input" 
+                            placeholder="https://api.example.com/endpoint" 
+                            class="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none"
+                            value="https://jsonplaceholder.typicode.com/posts/1"
+                        >
+                    </div>
+                </div>
+                
+                <!-- Tabs for Request Options -->
+                <div class="border-b border-gray-200">
+                    <div class="flex space-x-8">
+                        <button id="headers-tab" class="request-tab py-2 border-b-2 border-primary text-primary font-medium">Headers</button>
+                        <button id="body-tab" class="request-tab py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Body</button>
+                        <button id="params-tab" class="request-tab py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Params</button>
+                        <button id="auth-tab" class="request-tab py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Auth</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Request Content -->
+            <div class="p-4">
+                <!-- Headers Section -->
+                <div id="headers-section">
+                    <div id="headers-container" class="space-y-3 mb-4">
+                        <div class="flex gap-3 items-center header-row">
+                            <input type="text" placeholder="Key" class="header-key flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                            <input type="text" placeholder="Value" class="header-value flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                            <button class="remove-header p-2 text-gray-400 hover:text-danger transition-colors">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="add-header" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 transition-colors">
+                        <i class="fa fa-plus-circle"></i> Add Header
+                    </button>
+                </div>
+                
+                <!-- Body Section (Hidden by default) -->
+                <div id="body-section" class="hidden">
+                    <div class="mb-3">
+                        <div class="flex gap-2 mb-3">
+                            <button class="body-type-btn px-3 py-1 rounded border border-gray-300 bg-gray-100 text-sm font-medium" data-type="none">None</button>
+                            <button class="body-type-btn px-3 py-1 rounded border border-primary bg-primary/10 text-sm font-medium active" data-type="json">JSON</button>
+                            <button class="body-type-btn px-3 py-1 rounded border border-gray-300 text-sm font-medium" data-type="form">Form Data</button>
+                            <button class="body-type-btn px-3 py-1 rounded border border-gray-300 text-sm font-medium" data-type="urlencoded">x-www-form-urlencoded</button>
+                            <button class="body-type-btn px-3 py-1 rounded border border-gray-300 text-sm font-medium" data-type="text">Text</button>
+                        </div>
+                        
+                        <div id="json-body" class="body-content">
+                            <textarea id="request-body" class="w-full h-40 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none font-mono text-sm" placeholder="{}">{
+  "title": "foo",
+  "body": "bar",
+  "userId": 1
+}</textarea>
+                            <div class="text-right mt-2">
+                                <button id="format-json" class="text-primary hover:text-primary/80 text-xs font-medium flex items-center gap-1 transition-colors ml-auto">
+                                    <i class="fa fa-indent"></i> Format JSON
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="form-body" class="body-content hidden">
+                            <div id="form-data-container" class="space-y-3 mb-4">
+                                <div class="flex gap-3 items-center form-row">
+                                    <input type="text" placeholder="Key" class="form-key flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                                    <input type="text" placeholder="Value" class="form-value flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                                    <button class="remove-form p-2 text-gray-400 hover:text-danger transition-colors">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button id="add-form-field" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 transition-colors">
+                                <i class="fa fa-plus-circle"></i> Add Form Field
+                            </button>
+                        </div>
+                        
+                        <!-- Other body types would be implemented similarly -->
+                        <div id="urlencoded-body" class="body-content hidden">
+                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
+                                x-www-form-urlencoded content will be displayed here
+                            </div>
+                        </div>
+                        
+                        <div id="text-body" class="body-content hidden">
+                            <textarea class="w-full h-40 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none font-mono text-sm" placeholder="Enter text content here..."></textarea>
+                        </div>
+                        
+                        <div id="none-body" class="body-content hidden">
+                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
+                                No body content
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Params Section (Hidden by default) -->
+                <div id="params-section" class="hidden">
+                    <div id="params-container" class="space-y-3 mb-4">
+                        <div class="flex gap-3 items-center param-row">
+                            <input type="text" placeholder="Key" class="param-key flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                            <input type="text" placeholder="Value" class="param-value flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                            <button class="remove-param p-2 text-gray-400 hover:text-danger transition-colors">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="add-param" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 transition-colors">
+                        <i class="fa fa-plus-circle"></i> Add Parameter
+                    </button>
+                </div>
+                
+                <!-- Auth Section (Hidden by default) -->
+                <div id="auth-section" class="hidden">
+                    <div class="mb-3">
+                        <div class="flex gap-2 mb-3">
+                            <button class="auth-type-btn px-3 py-1 rounded border border-primary bg-primary/10 text-sm font-medium active" data-type="none">None</button>
+                            <button class="auth-type-btn px-3 py-1 rounded border border-gray-300 text-sm font-medium" data-type="basic">Basic Auth</button>
+                            <button class="auth-type-btn px-3 py-1 rounded border border-gray-300 text-sm font-medium" data-type="bearer">Bearer Token</button>
+                        </div>
+                        
+                        <div id="none-auth" class="auth-content">
+                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
+                                No authentication
+                            </div>
+                        </div>
+                        
+                        <div id="basic-auth" class="auth-content hidden">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                    <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="bearer-auth" class="auth-content hidden">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Token</label>
+                                <input type="text" placeholder="Enter your bearer token" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Send Button -->
+            <div class="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+                <button id="send-request" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-3 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 shadow-sm">
+                    <i class="fa fa-paper-plane"></i>
+                    <span>Send Request</span>
+                </button>
+            </div>
+        </section>
+        
+        <!-- Response Section -->
+        <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md">
+            <!-- Response Header -->
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Response</h2>
+                
+                <!-- Response Status -->
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span id="status-code" class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 font-mono text-sm">-</span>
+                        <span id="status-text" class="text-gray-600 text-sm">-</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1 text-gray-600 text-sm">
+                            <i class="fa fa-clock-o"></i>
+                            <span id="response-time">- ms</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-gray-600 text-sm">
+                            <i class="fa fa-file-text-o"></i>
+                            <span id="response-size">- B</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tabs for Response Options -->
+                <div class="border-b border-gray-200">
+                    <div class="flex space-x-8">
+                        <button id="body-response-tab" class="response-tab py-2 border-b-2 border-primary text-primary font-medium">Body</button>
+                        <button id="headers-response-tab" class="response-tab py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Headers</button>
+                        <button id="cookies-response-tab" class="response-tab py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Cookies</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Response Content -->
+            <div class="p-4">
+                <!-- Body Response -->
+                <div id="body-response-section">
+                    <div class="mb-3 flex justify-between items-center">
+                        <div class="flex gap-2">
+                            <button class="response-view-btn px-3 py-1 rounded border border-primary bg-primary/10 text-sm font-medium active" data-view="pretty">Pretty</button>
+                            <button class="response-view-btn px-3 py-1 rounded border border-gray-300 text-sm font-medium" data-view="raw">Raw</button>
+                            <button class="response-view-btn px-3 py-1 rounded border border-gray-300 text-sm font-medium" data-view="preview">Preview</button>
+                        </div>
+                        <div>
+                            <button id="copy-response" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1 transition-colors">
+                                <i class="fa fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="response-container" class="border border-gray-200 rounded-lg overflow-hidden h-80">
+                        <div id="empty-response" class="h-full flex items-center justify-center text-gray-400">
+                            <div class="text-center">
+                                <i class="fa fa-inbox text-4xl mb-2"></i>
+                                <p>Response will be displayed here</p>
+                            </div>
+                        </div>
+                        <pre id="raw-response" class="hidden h-full p-4 overflow-auto font-mono text-sm scrollbar-thin"></pre>
+                        <div id="pretty-response" class="hidden h-full p-4 overflow-auto scrollbar-thin"></div>
+                        <div id="preview-response" class="hidden h-full p-4 overflow-auto scrollbar-thin"></div>
+                    </div>
+                </div>
+                
+                <!-- Headers Response (Hidden by default) -->
+                <div id="headers-response-section" class="hidden">
+                    <div class="border border-gray-200 rounded-lg overflow-hidden h-80">
+                        <div id="response-headers" class="p-4 overflow-auto scrollbar-thin">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Key</th>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/3">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="response-headers-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Headers will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cookies Response (Hidden by default) -->
+                <div id="cookies-response-section" class="hidden">
+                    <div class="border border-gray-200 rounded-lg overflow-hidden h-80">
+                        <div class="p-4 overflow-auto scrollbar-thin">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                                        <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="response-cookies-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Cookies will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-3 px-4 md:px-6 mt-6">
+        <div class="container mx-auto text-center text-gray-500 text-sm">
+            <p>Web Postman - A simple REST client for the web</p>
+        </div>
+    </footer>
+
+    <!-- Help Modal (Hidden by default) -->
+    <div id="help-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[80vh] overflow-auto m-4">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800">How to Use</h3>
+                <button id="close-help" class="text-gray-500 hover:text-gray-700">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Making a Request</h4>
+                        <ol class="list-decimal list-inside space-y-1 text-gray-600">
+                            <li>Select an HTTP method (GET, POST, PUT, etc.)</li>
+                            <li>Enter the URL you want to send the request to</li>
+                            <li>(Optional) Add headers, parameters, or authentication</li>
+                            <li>(Optional) Add a request body for methods that support it</li>
+                            <li>Click "Send Request" to make the request</li>
+                        </ol>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Viewing the Response</h4>
+                        <p class="text-gray-600">The response will be displayed in the response section, including status code, headers, and body content.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Proxy Server</h4>
+                        <p class="text-gray-600">This tool uses a proxy server to bypass CORS restrictions. Make sure the proxy server is running before using the tool.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const methodBtns = document.querySelectorAll('.method-btn');
+        const requestTabs = document.querySelectorAll('.request-tab');
+        const responseTabs = document.querySelectorAll('.response-tab');
+        const bodyTypeBtns = document.querySelectorAll('.body-type-btn');
+        const authTypeBtns = document.querySelectorAll('.auth-type-btn');
+        const responseViewBtns = document.querySelectorAll('.response-view-btn');
+        const sendBtn = document.getElementById('send-request');
+        const addHeaderBtn = document.getElementById('add-header');
+        const headersContainer = document.getElementById('headers-container');
+        const addParamBtn = document.getElementById('add-param');
+        const paramsContainer = document.getElementById('params-container');
+        const addFormFieldBtn = document.getElementById('add-form-field');
+        const formDataContainer = document.getElementById('form-data-container');
+        const formatJsonBtn = document.getElementById('format-json');
+        const requestBody = document.getElementById('request-body');
+        const copyResponseBtn = document.getElementById('copy-response');
+        const helpBtn = document.getElementById('help-btn');
+        const helpModal = document.getElementById('help-modal');
+        const closeHelpBtn = document.getElementById('close-help');
+        const themeToggle = document.getElementById('theme-toggle');
+        
+        // State
+        let currentMethod = 'GET';
+        let currentRequestBodyType = 'json';
+        
+        // Event Listeners
+        methodBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                methodBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMethod = btn.dataset.method;
+                
+                // Some methods typically don't have a body
+                const bodyTab = document.getElementById('body-tab');
+                if (['GET', 'HEAD', 'OPTIONS'].includes(currentMethod)) {
+                    bodyTab.classList.add('opacity-50', 'cursor-not-allowed');
+                    bodyTab.disabled = true;
+                } else {
+                    bodyTab.classList.remove('opacity-50', 'cursor-not-allowed');
+                    bodyTab.disabled = false;
+                }
+            });
+        });
+        
+        // Request tabs switching
+        requestTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                requestTabs.forEach(t => {
+                    t.classList.remove('border-primary', 'text-primary');
+                    t.classList.add('border-transparent', 'text-gray-500');
+                });
+                
+                // Add active class to clicked tab
+                tab.classList.remove('border-transparent', 'text-gray-500');
+                tab.classList.add('border-primary', 'text-primary');
+                
+                // Hide all sections
+                document.getElementById('headers-section').classList.add('hidden');
+                document.getElementById('body-section').classList.add('hidden');
+                document.getElementById('params-section').classList.add('hidden');
+                document.getElementById('auth-section').classList.add('hidden');
+                
+                // Show corresponding section
+                const sectionId = tab.id.replace('-tab', '-section');
+                document.getElementById(sectionId).classList.remove('hidden');
+            });
+        });
+        
+        // Response tabs switching
+        responseTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                responseTabs.forEach(t => {
+                    t.classList.remove('border-primary', 'text-primary');
+                    t.classList.add('border-transparent', 'text-gray-500');
+                });
+                
+                // Add active class to clicked tab
+                tab.classList.remove('border-transparent', 'text-gray-500');
+                tab.classList.add('border-primary', 'text-primary');
+                
+                // Hide all sections
+                document.getElementById('body-response-section').classList.add('hidden');
+                document.getElementById('headers-response-section').classList.add('hidden');
+                document.getElementById('cookies-response-section').classList.add('hidden');
+                
+                // Show corresponding section
+                const sectionId = tab.id.replace('-tab', '-section');
+                document.getElementById(sectionId).classList.remove('hidden');
+            });
+        });
+        
+        // Body type buttons
+        bodyTypeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                bodyTypeBtns.forEach(b => {
+                    b.classList.remove('active', 'border-primary', 'bg-primary/10');
+                    b.classList.add('border-gray-300');
+                });
+                btn.classList.add('active', 'border-primary', 'bg-primary/10');
+                btn.classList.remove('border-gray-300');
+                
+                currentRequestBodyType = btn.dataset.type;
+                
+                // Hide all body contents
+                document.querySelectorAll('.body-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                // Show selected body content
+                document.getElementById(`${currentRequestBodyType}-body`).classList.remove('hidden');
+            });
+        });
+        
+        // Auth type buttons
+        authTypeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                authTypeBtns.forEach(b => {
+                    b.classList.remove('active', 'border-primary', 'bg-primary/10');
+                    b.classList.add('border-gray-300');
+                });
+                btn.classList.add('active', 'border-primary', 'bg-primary/10');
+                btn.classList.remove('border-gray-300');
+                
+                const authType = btn.dataset.type;
+                
+                // Hide all auth contents
+                document.querySelectorAll('.auth-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                // Show selected auth content
+                document.getElementById(`${authType}-auth`).classList.remove('hidden');
+            });
+        });
+        
+        // Response view buttons
+        responseViewBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                responseViewBtns.forEach(b => {
+                    b.classList.remove('active', 'border-primary', 'bg-primary/10');
+                    b.classList.add('border-gray-300');
+                });
+                btn.classList.add('active', 'border-primary', 'bg-primary/10');
+                btn.classList.remove('border-gray-300');
+                
+                const viewType = btn.dataset.view;
+                
+                // Hide all response views
+                document.getElementById('empty-response').classList.add('hidden');
+                document.getElementById('raw-response').classList.add('hidden');
+                document.getElementById('pretty-response').classList.add('hidden');
+                document.getElementById('preview-response').classList.add('hidden');
+                
+                // Show selected view
+                document.getElementById(`${viewType}-response`).classList.remove('hidden');
+            });
+        });
+        
+        // Add header
+        addHeaderBtn.addEventListener('click', () => {
+            const headerRow = document.createElement('div');
+            headerRow.className = 'flex gap-3 items-center header-row';
+            headerRow.innerHTML = `
+                <input type="text" placeholder="Key" class="header-key flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                <input type="text" placeholder="Value" class="header-value flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                <button class="remove-header p-2 text-gray-400 hover:text-danger transition-colors">
+                    <i class="fa fa-trash"></i>
+                </button>
+            `;
+            headersContainer.appendChild(headerRow);
+            
+            // Add event listener to remove button
+            headerRow.querySelector('.remove-header').addEventListener('click', () => {
+                headerRow.remove();
+            });
+        });
+        
+        // Remove header
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-header') && headersContainer.children.length > 1) {
+                e.target.closest('.header-row').remove();
+            }
+        });
+        
+        // Add parameter
+        addParamBtn.addEventListener('click', () => {
+            const paramRow = document.createElement('div');
+            paramRow.className = 'flex gap-3 items-center param-row';
+            paramRow.innerHTML = `
+                <input type="text" placeholder="Key" class="param-key flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                <input type="text" placeholder="Value" class="param-value flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                <button class="remove-param p-2 text-gray-400 hover:text-danger transition-colors">
+                    <i class="fa fa-trash"></i>
+                </button>
+            `;
+            paramsContainer.appendChild(paramRow);
+            
+            // Add event listener to remove button
+            paramRow.querySelector('.remove-param').addEventListener('click', () => {
+                paramRow.remove();
+            });
+        });
+        
+        // Remove parameter
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-param') && paramsContainer.children.length > 1) {
+                e.target.closest('.param-row').remove();
+            }
+        });
+        
+        // Add form field
+        addFormFieldBtn.addEventListener('click', () => {
+            const formRow = document.createElement('div');
+            formRow.className = 'flex gap-3 items-center form-row';
+            formRow.innerHTML = `
+                <input type="text" placeholder="Key" class="form-key flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                <input type="text" placeholder="Value" class="form-value flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none text-sm">
+                <button class="remove-form p-2 text-gray-400 hover:text-danger transition-colors">
+                    <i class="fa fa-trash"></i>
+                </button>
+            `;
+            formDataContainer.appendChild(formRow);
+            
+            // Add event listener to remove button
+            formRow.querySelector('.remove-form').addEventListener('click', () => {
+                formRow.remove();
+            });
+        });
+        
+        // Remove form field
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-form') && formDataContainer.children.length > 1) {
+                e.target.closest('.form-row').remove();
+            }
+        });
+        
+        // Format JSON
+        formatJsonBtn.addEventListener('click', () => {
+            try {
+                const parsed = JSON.parse(requestBody.value);
+                requestBody.value = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                alert('Invalid JSON');
+            }
+        });
+        
+        // Send Request
+        sendBtn.addEventListener('click', async () => {
+            // Show loading state
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Sending...';
+            
+            // Clear previous response
+            document.getElementById('empty-response').classList.remove('hidden');
+            document.getElementById('raw-response').classList.innerHTML = '';
+            document.getElementById('pretty-response').classList.innerHTML = '';
+            document.getElementById('preview-response').classList.innerHTML = '';
+            document.getElementById('response-headers-body').innerHTML = '';
+            document.getElementById('response-cookies-body').innerHTML = '';
+            document.getElementById('status-code').textContent = '-';
+            document.getElementById('status-text').textContent = '-';
+            document.getElementById('response-time').textContent = '- ms';
+            document.getElementById('response-size').textContent = '- B';
+            
+            try {
+                const url = document.getElementById('url-input').value.trim();
+                if (!url) {
+                    alert('Please enter a URL');
+                    return;
+                }
+                
+                // Collect headers
+                const headers = {};
+                document.querySelectorAll('.header-row').forEach(row => {
+                    const key = row.querySelector('.header-key').value.trim();
+                    const value = row.querySelector('.header-value').value.trim();
+                    if (key) {
+                        headers[key] = value;
+                    }
+                });
+                
+                // Collect params
+                const params = new URLSearchParams();
+                document.querySelectorAll('.param-row').forEach(row => {
+                    const key = row.querySelector('.param-key').value.trim();
+                    const value = row.querySelector('.param-value').value.trim();
+                    if (key) {
+                        params.append(key, value);
+                    }
+                });
+                
+                // Add params to URL if any
+                const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
+                
+                // Collect body
+                let body = null;
+                if (!['GET', 'HEAD', 'OPTIONS'].includes(currentMethod)) {
+                    switch (currentRequestBodyType) {
+                        case 'json':
+                            try {
+                                body = JSON.stringify(JSON.parse(requestBody.value));
+                                headers['Content-Type'] = 'application/json';
+                            } catch (e) {
+                                alert('Invalid JSON in request body');
+                                return;
+                            }
+                            break;
+                        case 'form':
+                            const formData = new FormData();
+                            document.querySelectorAll('.form-row').forEach(row => {
+                                const key = row.querySelector('.form-key').value.trim();
+                                const value = row.querySelector('.form-value').value.trim();
+                                if (key) {
+                                    formData.append(key, value);
+                                }
+                            });
+                            body = formData;
+                            // Don't set Content-Type for FormData, browser will handle it
+                            delete headers['Content-Type'];
+                            break;
+                        case 'urlencoded':
+                            const urlEncoded = new URLSearchParams();
+                            // Implementation would be similar to form data
+                            body = urlEncoded;
+                            headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                            break;
+                        case 'text':
+                            body = document.querySelector('#text-body textarea').value;
+                            headers['Content-Type'] = 'text/plain';
+                            break;
+                    }
+                }
+                
+                // Start timing
+                const startTime = performance.now();
+                
+                // Send request through proxy
+                // 注意：这里假设代理服务器运行在 localhost:8080
+                const proxyUrl = `http://localhost:8080/proxy?url=${encodeURIComponent(fullUrl)}`;
+                
+                const response = await fetch(proxyUrl, {
+                    method: currentMethod,
+                    headers: headers,
+                    body: body,
+                    mode: 'cors'
+                });
+                
+                // Calculate response time
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                // Update status and timing
+                document.getElementById('status-code').textContent = response.status;
+                document.getElementById('status-text').textContent = response.statusText;
+                document.getElementById('response-time').textContent = `${responseTime} ms`;
+                
+                // Set status code color
+                const statusCodeEl = document.getElementById('status-code');
+                statusCodeEl.className = '';
+                if (response.status >= 200 && response.status < 300) {
+                    statusCodeEl.classList.add('px-3', 'py-1', 'rounded-full', 'bg-green-100', 'text-green-700', 'font-mono', 'text-sm');
+                } else if (response.status >= 300 && response.status < 400) {
+                    statusCodeEl.classList.add('px-3', 'py-1', 'rounded-full', 'bg-yellow-100', 'text-yellow-700', 'font-mono', 'text-sm');
+                } else if (response.status >= 400 && response.status < 500) {
+                    statusCodeEl.classList.add('px-3', 'py-1', 'rounded-full', 'bg-orange-100', 'text-orange-700', 'font-mono', 'text-sm');
+                } else {
+                    statusCodeEl.classList.add('px-3', 'py-1', 'rounded-full', 'bg-red-100', 'text-red-700', 'font-mono', 'text-sm');
+                }
+                
+                // Get response body
+                let responseBody;
+                let responseBodyText;
+                let responseSize = 0;
+                
+                try {
+                    responseBodyText = await response.text();
+                    responseSize = new Blob([responseBodyText]).size;
+                    document.getElementById('response-size').textContent = `${responseSize} B`;
+                    
+                    // Try to parse as JSON
+                    responseBody = JSON.parse(responseBodyText);
+                } catch (e) {
+                    // Not JSON, just use text
+                    responseBody = responseBodyText;
+                }
+                
+                // Update response views
+                document.getElementById('empty-response').classList.add('hidden');
+                
+                // Raw response
+                document.getElementById('raw-response').textContent = responseBodyText;
+                document.getElementById('raw-response').classList.remove('hidden');
+                
+                // Pretty response (for JSON)
+                const prettyEl = document.getElementById('pretty-response');
+                if (typeof responseBody === 'object') {
+                    prettyEl.innerHTML = syntaxHighlight(responseBody);
+                } else {
+                    prettyEl.textContent = responseBodyText;
+                }
+                prettyEl.classList.remove('hidden');
+                
+                // Preview response (simplified)
+                const previewEl = document.getElementById('preview-response');
+                if (typeof responseBody === 'object') {
+                    previewEl.innerHTML = `<pre>${JSON.stringify(responseBody, null, 2)}</pre>`;
+                } else if (responseBodyText.startsWith('<')) {
+                    // Simple HTML preview
+                    previewEl.innerHTML = responseBodyText;
+                } else {
+                    previewEl.textContent = responseBodyText;
+                }
+                
+                // Show headers
+                const headersBody = document.getElementById('response-headers-body');
+                headersBody.innerHTML = '';
+                response.headers.forEach((value, key) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${key}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${value}</td>
+                    `;
+                    headersBody.appendChild(row);
+                });
+                
+                // Switch to body response tab
+                document.getElementById('body-response-tab').click();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error sending request: ${error.message}`);
+            } finally {
+                // Reset button state
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fa fa-paper-plane"></i><span>Send Request</span>';
+            }
+        });
+        
+        // Copy response to clipboard
+        copyResponseBtn.addEventListener('click', () => {
+            const rawResponse = document.getElementById('raw-response').textContent;
+            if (rawResponse) {
+                navigator.clipboard.writeText(rawResponse).then(() => {
+                    const originalText = copyResponseBtn.innerHTML;
+                    copyResponseBtn.innerHTML = '<i class="fa fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        copyResponseBtn.innerHTML = originalText;
+                    }, 2000);
+                });
+            }
+        });
+        
+        // Help modal
+        helpBtn.addEventListener('click', () => {
+            helpModal.classList.remove('hidden');
+        });
+        
+        closeHelpBtn.addEventListener('click', () => {
+            helpModal.classList.add('hidden');
+        });
+        
+        // Close modal when clicking outside
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                helpModal.classList.add('hidden');
+            }
+        });
+        
+        // Theme toggle (simplified)
+        themeToggle.addEventListener('click', () => {
+            const icon = themeToggle.querySelector('i');
+            if (icon.classList.contains('fa-moon-o')) {
+                icon.classList.remove('fa-moon-o');
+                icon.classList.add('fa-sun-o');
+                document.body.classList.add('dark-mode');
+                // In a real implementation, you would add dark mode styles
+            } else {
+                icon.classList.remove('fa-sun-o');
+                icon.classList.add('fa-moon-o');
+                document.body.classList.remove('dark-mode');
+            }
+        });
+        
+        // Helper function for syntax highlighting JSON
+        function syntaxHighlight(json) {
+            if (typeof json !== 'string') {
+                json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'text-red-500';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'text-blue-500';
+                    } else {
+                        cls = 'text-green-500';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'text-purple-500';
+                } else if (/null/.test(match)) {
+                    cls = 'text-orange-500';
+                }
+                return `<span class="${cls}">${match}</span>`;
+            });
+        }
+    </script>
+</body>
+</html>
